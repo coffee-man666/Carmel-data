@@ -2,3 +2,5 @@ plotly-express
 streamlit
 pandas
 numpy
+openpyxl
+xlrd
