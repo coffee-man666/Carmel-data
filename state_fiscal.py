@@ -36,14 +36,14 @@ def load_tax_revenue_data():
 
 tax_translation_dict = {
     "Total Taxes": "总税收",
-    "Property taxes": "财产税",
+    "Property taxes": "房产税",
     "General sales and gross receipts": "一般销售和总收入税",
     "Motor fuels": "汽油税",
     "Alcoholic beverages": "酒精饮料税",
     "Public utilities": "公用事业税",
     "Insurance premiums": "保险费税",
     "Tobacco products": "烟草产品税",
-    "Sports betting (including pari-mutuels)": "体育博彩（包括相对博彩）",
+    "Sports betting (including pari-mutuels)": "体育博彩税",
     "Amusements": "娱乐税",
     "Other selective sales and gross receipts": "其他选择性销售和总收入税",
     "Motor vehicles": "汽车税",
@@ -60,7 +60,7 @@ tax_translation_dict = {
     "Other taxes, NEC": "其他未分类税收"
 }
 
-translation_dict = {
+state_translation_dict = {
     "U.S. Total (excludes Washington, D.C.)": "美国总计（不包括华盛顿特区）",
     "Alabama": "亚拉巴马州",
     "Alaska": "阿拉斯加州",
@@ -119,19 +119,21 @@ st.set_page_config(layout="wide")
 
 
 tax_revenue = load_tax_revenue_data()
+tax_revenue['tax_category'] = tax_revenue['tax_category'].map(tax_translation_dict)
+tax_revenue['state'] = tax_revenue['state'].map(state_translation_dict)
+
 states = tax_revenue['state'].unique().tolist()
 tax_categories = tax_revenue['tax_category'].unique().tolist()
 fiscal_quarters = tax_revenue['fiscal_quarter'].unique().tolist()
 
-state_total = "U.S. Total (excludes Washington, D.C.)"
-category_total = "Total Taxes"
-
+state_total = state_translation_dict.get("U.S. Total (excludes Washington, D.C.)")
+category_total = tax_translation_dict.get("Total Taxes") 
 
 #--------------------------------  State Fiscal Revenue  --------------------------------#
 
 st.title('美国各州财政收入')
 
-tab1, tab2 = st.tabs(["税收-按州分类", "税收-按税种分类"])
+tab1, tab2 = st.tabs(["同一税种跨州情况", "州内跨税种总税收"])
 
 with tab1:
     qt = st.selectbox('请选择财政季度/范围', fiscal_quarters, index=0, key='tab1a')
@@ -140,9 +142,7 @@ with tab1:
     for c in categories:
         fig = px.bar(
             tax_revenue.query(f'fiscal_quarter=="{qt}" & tax_category=="{c}" & state!="{state_total}" ')\
-                .sort_values('revenue', ascending=False)\
-                .assign(state=lambda x: x['state'].map(translation_dict))\
-                .assign(tax_category=lambda x: x['tax_category'].map(tax_translation_dict)),
+                .sort_values('revenue', ascending=False),
             x='state',
             y='revenue',
             title=f'各州税收收入：{c}',
@@ -160,9 +160,7 @@ with tab2:
     for s in states:
         fig = px.bar(
             tax_revenue.query(f'fiscal_quarter=="{qt}" & state=="{s}" & tax_category!="{category_total}" ')\
-                .sort_values('revenue', ascending=False)\
-                .assign(state=lambda x: x['state'].map(translation_dict))\
-                .assign(tax_category=lambda x: x['tax_category'].map(tax_translation_dict)),
+                .sort_values('revenue', ascending=False),
             x='tax_category',
             y='revenue',
             title=f'各税种税收收入{s}',
